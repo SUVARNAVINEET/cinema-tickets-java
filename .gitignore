@@ -1,0 +1,11 @@
+target/
+
+*.class
+*.log
+hs_err_pid*.log
+
+.idea/
+*.iml
+.classpath
+.project
+.settings/
