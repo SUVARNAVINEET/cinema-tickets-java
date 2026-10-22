@@ -49,17 +49,34 @@ public class TicketServiceImpl implements TicketService {
             throw new InvalidPurchaseException("Account id must be greater than zero");
         }
     }
-    
+
     private Map<Type, Integer> countTicketsByType(TicketTypeRequest... ticketTypeRequests) {
+        if (ticketTypeRequests == null || ticketTypeRequests.length == 0) {
+            throw new InvalidPurchaseException("At least one ticket request is required");
+        }
+
         Map<Type, Integer> ticketCounts = new EnumMap<>(Type.class);
         for (Type type : Type.values()) {
             ticketCounts.put(type, 0);
         }
 
         for (TicketTypeRequest request : ticketTypeRequests) {
+            validateRequest(request);
             ticketCounts.merge(request.getTicketType(), request.getNoOfTickets(), Integer::sum);
         }
         return ticketCounts;
+    }
+
+    private void validateRequest(TicketTypeRequest request) {
+        if (request == null) {
+            throw new InvalidPurchaseException("Ticket request must not be null");
+        }
+        if (request.getTicketType() == null) {
+            throw new InvalidPurchaseException("Ticket type must not be null");
+        }
+        if (request.getNoOfTickets() <= 0) {
+            throw new InvalidPurchaseException("Number of tickets must be greater than zero for each request");
+        }
     }
 
     private int calculateTotalAmount(Map<Type, Integer> ticketCounts) {
