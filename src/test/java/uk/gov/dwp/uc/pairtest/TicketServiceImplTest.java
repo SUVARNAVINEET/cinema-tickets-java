@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import static org.mockito.Mockito.verifyNoInteractions;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import thirdparty.paymentgateway.TicketPaymentService;
@@ -52,6 +53,31 @@ class TicketServiceImplTest {
 
     private static TicketTypeRequest infants(int n) {
         return new TicketTypeRequest(INFANT, n);
+    }
+
+    private void assertRejected(Long accountId, TicketTypeRequest... requests) {
+        assertThrows(InvalidPurchaseException.class, () -> ticketService.purchaseTickets(accountId, requests));
+        verifyNoInteractions(paymentService, seatReservationService);
+    }
+
+
+    @Nested
+    @DisplayName("Account id validation")
+    class AccountValidation {
+
+        @ParameterizedTest
+        @NullSource
+        @ValueSource(longs = {0L, -1L, Long.MIN_VALUE})
+        void rejectsInvalidAccountIds(Long accountId) {
+            assertRejected(accountId, adults(1));
+        }
+
+        @Test
+        void acceptsLargeAccountId() {
+            ticketService.purchaseTickets(Long.MAX_VALUE, adults(1));
+            verify(paymentService).makePayment(Long.MAX_VALUE, 25);
+            verify(seatReservationService).reserveSeat(Long.MAX_VALUE, 1);
+        }
     }
 
 
