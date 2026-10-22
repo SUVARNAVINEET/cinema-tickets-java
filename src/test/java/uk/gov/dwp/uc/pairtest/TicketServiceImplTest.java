@@ -79,6 +79,38 @@ class TicketServiceImplTest {
             verify(seatReservationService).reserveSeat(Long.MAX_VALUE, 1);
         }
     }
+    @Nested
+    @DisplayName("Malformed ticket requests")
+    class MalformedRequests {
+
+        @Test
+        void rejectsNullRequestArray() {
+            assertRejected(VALID_ACCOUNT_ID, (TicketTypeRequest[]) null);
+        }
+
+        @Test
+        void rejectsNoRequests() {
+            assertRejected(VALID_ACCOUNT_ID);
+        }
+
+        @Test
+        void rejectsNullRequestElement() {
+            assertRejected(VALID_ACCOUNT_ID, adults(1), null);
+        }
+
+        @Test
+        void rejectsNullTicketType() {
+            assertRejected(VALID_ACCOUNT_ID, adults(1), new TicketTypeRequest(null, 1));
+        }
+
+        @ParameterizedTest
+        @ValueSource(ints = {0, -1, Integer.MIN_VALUE})
+        void rejectsNonPositiveQuantity(int quantity) {
+            assertRejected(VALID_ACCOUNT_ID, adults(1), children(quantity));
+        }
+
+
+    }
 
 
     @Nested
