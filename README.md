@@ -4,13 +4,6 @@
 
 My implementation of the DWP cinema tickets exercise.
 
-## Running it
-
-Requires Java 21 and Maven (the versions set in the supplied `pom.xml`).
-
-```
-mvn test
-```
 
 ## What I changed
 
