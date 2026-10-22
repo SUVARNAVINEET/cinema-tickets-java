@@ -1,4 +1,4 @@
-# AI generated
+
 # Cinema Tickets (Java)
 
 
