@@ -32,15 +32,24 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     public void purchaseTickets(Long accountId, TicketTypeRequest... ticketTypeRequests) throws InvalidPurchaseException {
+        validateAccountId(accountId);
         Map<Type, Integer> ticketCounts = countTicketsByType(ticketTypeRequests);
 
         int totalAmountToPay = calculateTotalAmount(ticketCounts);
         int totalSeatsToAllocate = calculateTotalSeats(ticketCounts);
 
+        // Everything is validated before either external service is called,
+        // so we can be sure that the payment and seat reservation will succeed.
         ticketPaymentService.makePayment(accountId, totalAmountToPay);
         seatReservationService.reserveSeat(accountId, totalSeatsToAllocate);
     }
 
+        private void validateAccountId(Long accountId) {
+        if (accountId == null || accountId <= 0) {
+            throw new InvalidPurchaseException("Account id must be greater than zero");
+        }
+    }
+    
     private Map<Type, Integer> countTicketsByType(TicketTypeRequest... ticketTypeRequests) {
         Map<Type, Integer> ticketCounts = new EnumMap<>(Type.class);
         for (Type type : Type.values()) {
