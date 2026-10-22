@@ -109,7 +109,31 @@ class TicketServiceImplTest {
             assertRejected(VALID_ACCOUNT_ID, adults(1), children(quantity));
         }
 
+        @Test
+        void negativeQuantityCannotBeUsedToSneakPastTheLimit() {
+            assertRejected(VALID_ACCOUNT_ID, adults(30), adults(-10));
+        }
 
+    }
+
+    @Nested
+    @DisplayName("Maximum of 25 tickets per purchase")
+    class MaximumTickets {
+
+        @Test
+        void rejects26Tickets() {
+            assertRejected(VALID_ACCOUNT_ID, adults(26));
+        }
+
+        @Test
+        void rejectsMoreThan25AcrossSeveralRequests() {
+            assertRejected(VALID_ACCOUNT_ID, adults(10), children(10), infants(6));
+        }
+
+        @Test
+        void rejectsQuantitiesThatWouldOverflowAnInt() {
+            assertRejected(VALID_ACCOUNT_ID, adults(Integer.MAX_VALUE), adults(Integer.MAX_VALUE));
+        }
     }
 
 
