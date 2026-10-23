@@ -1,22 +1,5 @@
 package uk.gov.dwp.uc.pairtest;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import static org.mockito.Mockito.verifyNoInteractions;
-import org.junit.jupiter.params.provider.NullSource;
-import org.junit.jupiter.params.provider.ValueSource;
-import thirdparty.paymentgateway.TicketPaymentService;
-import thirdparty.seatbooking.SeatReservationService;
-import uk.gov.dwp.uc.pairtest.domain.TicketTypeRequest;
-import uk.gov.dwp.uc.pairtest.exception.InvalidPurchaseException;
-
-import java.util.stream.Stream;
-
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.Mockito.inOrder;
@@ -27,6 +10,23 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static uk.gov.dwp.uc.pairtest.domain.TicketTypeRequest.Type.ADULT;
 import static uk.gov.dwp.uc.pairtest.domain.TicketTypeRequest.Type.CHILD;
 import static uk.gov.dwp.uc.pairtest.domain.TicketTypeRequest.Type.INFANT;
+
+import java.util.stream.Stream;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
+
+import thirdparty.paymentgateway.TicketPaymentService;
+import thirdparty.seatbooking.SeatReservationService;
+import uk.gov.dwp.uc.pairtest.domain.TicketTypeRequest;
+import uk.gov.dwp.uc.pairtest.exception.InvalidPurchaseException;
 
 class TicketServiceImplTest {
 
@@ -60,14 +60,13 @@ class TicketServiceImplTest {
         verifyNoInteractions(paymentService, seatReservationService);
     }
 
-
     @Nested
     @DisplayName("Account id validation")
     class AccountValidation {
 
         @ParameterizedTest
         @NullSource
-        @ValueSource(longs = {0L, -1L, Long.MIN_VALUE})
+        @ValueSource(longs = { 0L, -1L, Long.MIN_VALUE })
         void rejectsInvalidAccountIds(Long accountId) {
             assertRejected(accountId, adults(1));
         }
@@ -79,6 +78,7 @@ class TicketServiceImplTest {
             verify(seatReservationService).reserveSeat(Long.MAX_VALUE, 1);
         }
     }
+
     @Nested
     @DisplayName("Malformed ticket requests")
     class MalformedRequests {
@@ -104,7 +104,7 @@ class TicketServiceImplTest {
         }
 
         @ParameterizedTest
-        @ValueSource(ints = {0, -1, Integer.MIN_VALUE})
+        @ValueSource(ints = { 0, -1, Integer.MIN_VALUE })
         void rejectsNonPositiveQuantity(int quantity) {
             assertRejected(VALID_ACCOUNT_ID, adults(1), children(quantity));
         }
@@ -136,7 +136,6 @@ class TicketServiceImplTest {
         }
     }
 
-
     @Nested
     @DisplayName("Valid purchases: correct amount paid and seats reserved")
     class ValidPurchases {
@@ -144,9 +143,9 @@ class TicketServiceImplTest {
         @ParameterizedTest(name = "{0}")
         @MethodSource("validPurchases")
         void paysCorrectAmountAndReservesCorrectSeats(String description,
-                                                       TicketTypeRequest[] requests,
-                                                       int expectedAmount,
-                                                       int expectedSeats) {
+                TicketTypeRequest[] requests,
+                int expectedAmount,
+                int expectedSeats) {
             ticketService.purchaseTickets(VALID_ACCOUNT_ID, requests);
 
             verify(paymentService).makePayment(VALID_ACCOUNT_ID, expectedAmount);
@@ -156,25 +155,56 @@ class TicketServiceImplTest {
 
         static Stream<Arguments> validPurchases() {
             return Stream.of(
-                    arguments("1 adult", new TicketTypeRequest[]{adults(1)}, 25, 1),
-                    arguments("1 adult, 1 child", new TicketTypeRequest[]{adults(1), children(1)}, 40, 2),
+                    arguments("1 adult", new TicketTypeRequest[] { adults(1) }, 25, 1),
+                    arguments("1 adult, 1 child", new TicketTypeRequest[] { adults(1), children(1) }, 40, 2),
                     arguments("1 adult, 1 infant (infant pays nothing, no seat)",
-                            new TicketTypeRequest[]{adults(1), infants(1)}, 25, 1),
+                            new TicketTypeRequest[] { adults(1), infants(1) }, 25, 1),
                     arguments("2 adults, 3 children, 2 infants",
-                            new TicketTypeRequest[]{adults(2), children(3), infants(2)}, 95, 5),
+                            new TicketTypeRequest[] { adults(2), children(3), infants(2) }, 95, 5),
                     arguments("requests for the same type are aggregated",
-                            new TicketTypeRequest[]{adults(2), children(1), adults(3)}, 140, 6),
+                            new TicketTypeRequest[] { adults(2), children(1), adults(3) }, 140, 6),
                     arguments("order of requests does not matter",
-                            new TicketTypeRequest[]{infants(1), children(2), adults(1)}, 55, 3),
+                            new TicketTypeRequest[] { infants(1), children(2), adults(1) }, 55, 3),
                     arguments("exactly 25 tickets is allowed",
-                            new TicketTypeRequest[]{adults(25)}, 625, 25),
+                            new TicketTypeRequest[] { adults(25) }, 625, 25),
                     arguments("infants count towards the 25 ticket limit but not seats",
-                            new TicketTypeRequest[]{adults(13), infants(12)}, 325, 13)
-            );
+                            new TicketTypeRequest[] { adults(13), infants(12) }, 325, 13));
         }
 
+        @Test
+        void paymentIsRequestedBeforeSeatReservation() {
+            ticketService.purchaseTickets(VALID_ACCOUNT_ID, adults(1));
+
+            var order = inOrder(paymentService, seatReservationService);
+            order.verify(paymentService).makePayment(VALID_ACCOUNT_ID, 25);
+            order.verify(seatReservationService).reserveSeat(VALID_ACCOUNT_ID, 1);
+        }
     }
 
+    @Nested
+    @DisplayName("Child and Infant tickets need an Adult")
+    class AdultRequired {
+
+        @Test
+        void rejectsChildWithoutAdult() {
+            assertRejected(VALID_ACCOUNT_ID, children(1));
+        }
+
+        @Test
+        void rejectsInfantWithoutAdult() {
+            assertRejected(VALID_ACCOUNT_ID, infants(1));
+        }
+
+        @Test
+        void rejectsChildAndInfantWithoutAdult() {
+            assertRejected(VALID_ACCOUNT_ID, children(2), infants(1));
+        }
+
+        @Test
+        void rejectsMoreInfantsThanAdults() {
+            assertRejected(VALID_ACCOUNT_ID, adults(1), infants(2));
+        }
+    }
 
     @Nested
     @DisplayName("Construction")
