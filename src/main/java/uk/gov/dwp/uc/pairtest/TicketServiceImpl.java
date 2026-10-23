@@ -20,18 +20,20 @@ public class TicketServiceImpl implements TicketService {
     private final SeatReservationService seatReservationService;
 
     public TicketServiceImpl(TicketPaymentService ticketPaymentService,
-                             SeatReservationService seatReservationService) {
-        this.ticketPaymentService =
-                Objects.requireNonNull(ticketPaymentService, "ticketPaymentService must not be null");
-        this.seatReservationService =
-                Objects.requireNonNull(seatReservationService, "seatReservationService must not be null");
+            SeatReservationService seatReservationService) {
+        this.ticketPaymentService = Objects.requireNonNull(ticketPaymentService,
+                "ticketPaymentService must not be null");
+        this.seatReservationService = Objects.requireNonNull(seatReservationService,
+                "seatReservationService must not be null");
     }
+
     /**
      * Should only have private methods other than the one below.
      */
 
     @Override
-    public void purchaseTickets(Long accountId, TicketTypeRequest... ticketTypeRequests) throws InvalidPurchaseException {
+    public void purchaseTickets(Long accountId, TicketTypeRequest... ticketTypeRequests)
+            throws InvalidPurchaseException {
         validateAccountId(accountId);
         Map<Type, Integer> ticketCounts = countTicketsByType(ticketTypeRequests);
         validateTicketMix(ticketCounts);
@@ -45,15 +47,16 @@ public class TicketServiceImpl implements TicketService {
         seatReservationService.reserveSeat(accountId, totalSeatsToAllocate);
     }
 
-        private void validateAccountId(Long accountId) {
+    private void validateAccountId(Long accountId) {
         if (accountId == null || accountId <= 0) {
             throw new InvalidPurchaseException("Account id must be greater than zero");
         }
     }
+
     /**
      * Validates each request and aggregates quantities per ticket type, so
      * several requests for the same type (e.g. ADULT x2 and ADULT x3) are summed.
-    */
+     */
     private Map<Type, Integer> countTicketsByType(TicketTypeRequest... ticketTypeRequests) {
         if (ticketTypeRequests == null || ticketTypeRequests.length == 0) {
             throw new InvalidPurchaseException("At least one ticket request is required");
@@ -70,7 +73,7 @@ public class TicketServiceImpl implements TicketService {
             totalTickets += request.getNoOfTickets();
             if (totalTickets > MAX_TICKETS_PER_PURCHASE) {
                 throw new InvalidPurchaseException("Cannot purchase more than "
-                    + MAX_TICKETS_PER_PURCHASE + " tickets at once");
+                        + MAX_TICKETS_PER_PURCHASE + " tickets at once");
             }
             ticketCounts.merge(request.getTicketType(), request.getNoOfTickets(), Integer::sum);
         }
@@ -95,13 +98,13 @@ public class TicketServiceImpl implements TicketService {
         int infants = ticketCounts.get(Type.INFANT);
 
         if (adults == 0 && (children > 0 || infants > 0)) {
-            throw new InvalidPurchaseException("At least one adult ticket is required when purchasing child or infant tickets");
+            throw new InvalidPurchaseException(
+                    "At least one adult ticket is required when purchasing child or infant tickets");
         }
         if (infants > adults) {
             throw new InvalidPurchaseException("Each infant must be accompanied by an adult");
         }
     }
-
 
     private int calculateTotalAmount(Map<Type, Integer> ticketCounts) {
         int total = 0;
